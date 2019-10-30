@@ -35,3 +35,12 @@ services:
     # 通过 IP 地址或域名访问
     labels:
       - "traefik.http.routers.nginx.rule=Host(`web.docker.localhost`)"
+  grafana:
+    image: grafana/grafana:latest
+    # 数据持久化需要设置容器内的grafana user id与当前用户相同，Linux系统通过命令 id -u 获取
+    user: "501"
+    volumes:
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./data/grafana:/var/lib/grafana
+    labels:
+      - "traefik.http.routers.grafana.rule=Host(`bi.docker.localhost`)"
