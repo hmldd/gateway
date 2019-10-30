@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  gateway:
+    # 官方最新的 traefik docker 镜像
+    image: traefik:latest
+    # 停止后重新启动
+    restart: unless-stopped
+    # 开启 traefik web UI 界面并监听 docker
+    command: 
+      - --api.insecure=true
+      - --providers.docker
+    ports:
+      # HTTP 端口
+      - "80:80"
+      # Web UI 端口(通过 --api.insecure=true 开启)
+      - "8080:8080"
+    volumes:
+      # 绑定 docker.sock 使 traefik 能够监听 docker 事件
+      - /var/run/docker.sock:/var/run/docker.sock
+  whoami:
+    image: containous/whoami
+    # 通过 IP 地址或域名提供一个容器的服务
+    labels:
+      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    # 绑定 web 文件目录和 nginx 配置目录
+    volumes:
+      - ./web:/web:ro
+      - ./config/nginx/vhost.conf:/etc/nginx/conf.d/vhost.conf
+    # 解决 docker 容器中的 bash 前台执行外部命令时不接收 signal 的问题
+    command: "/bin/sh -c 'while :; do sleep 6h; nginx -s reload; done & exec nginx -g \"daemon off;\"'"
+    # 通过 IP 地址或域名访问
+    labels:
+      - "traefik.http.routers.nginx.rule=Host(`web.docker.localhost`)"
