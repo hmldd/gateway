@@ -3,26 +3,40 @@ version: '3'
 services:
   gateway:
     # 官方最新的 traefik docker 镜像
+    # 生产环境建议指定镜像版本号
     image: traefik:latest
     # 停止后重新启动
     restart: unless-stopped
-    # 开启 traefik web UI 界面并监听 docker
-    command: 
-      - --api.insecure=true
-      - --providers.docker
+    # 静态配置可以通过 traefik.toml 文件设置，command 命令参数移至配置文件
+    # command: --api --providers.docker
     ports:
       # HTTP 端口
       - "80:80"
-      # Web UI 端口(通过 --api.insecure=true 开启)
-      - "8080:8080"
     volumes:
+      # 绑定 traefik 配置文件
+      - ./config/traefik/traefik.toml:/etc/traefik/traefik.toml:ro
       # 绑定 docker.sock 使 traefik 能够监听 docker 事件
       - /var/run/docker.sock:/var/run/docker.sock
+    # docker 动态配置使用 labels 设置
+    labels:
+      # 配置 traefik dashboard 和 api 服务的域名
+      - "traefik.http.routers.api.rule=Host(`traefik.docker.localhost`)"
+      # 配置 api 服务的中间件 auth
+      - "traefik.http.routers.api.middlewares=auth"
+      # 配置 auth 中间件使用 basicauth 并设置账号密码
+      # 密码使用 htpasswd 生成 MD5、SHA1 或 BCrypt，生成的密码如果包含 $ 需要在 $ 前添加一个 $ 转义字符
+      # 生成账号密码可以使用如下的命令：
+      # echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$zDPJo98m$$XC0zhnLRaYKlXNhoEbUXd/"
+      # 中间件 auth 账号密码验证通过之后路由至 api@internal 服务
+      - "traefik.http.routers.api.service=api@internal"
   whoami:
     image: containous/whoami
     # 通过 IP 地址或域名提供一个容器的服务
     labels:
       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+      # auth 中间件可以共用
+      - "traefik.http.routers.whoami.middlewares=auth"
   nginx:
     image: nginx:latest
     restart: unless-stopped

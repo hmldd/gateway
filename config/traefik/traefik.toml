@@ -1,0 +1,19 @@
+# traefik 配置，traefik 版本v2.0 参考文档https://docs.traefik.io/
+# Notice: traefik.toml 文件仅配置静态(static)参数，docker provider 的动态配置通过docker-compose.yml文件中的 labels 设置
+
+# 日志
+[log]
+  # 默认 ERROR，可配置 DEBUG、PANIC、FATAL、ERROR、WARN、INFO
+  level = "DEBUG"
+
+# 入口
+[entryPoints]
+  [entryPoints.http]
+    address = ":80"
+
+# 配置 providers，监听 docker 事件
+[providers.docker]
+  endpoint = "unix:///var/run/docker.sock"
+
+# 开启 traefik API 和 dashboard 界面
+[api]
