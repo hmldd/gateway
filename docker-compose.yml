@@ -12,6 +12,8 @@ services:
     ports:
       # HTTP 端口
       - "80:80"
+      - "3306:3306"
+      - "6379:6379"
     volumes:
       # 绑定 traefik 配置文件
       - ./config/traefik/traefik.toml:/etc/traefik/traefik.toml:ro
@@ -37,6 +39,7 @@ services:
       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
       # auth 中间件可以共用
       - "traefik.http.routers.whoami.middlewares=auth"
+      - "traefik.http.routers.whoami.entryPoints=http"
   nginx:
     image: nginx:latest
     restart: unless-stopped
@@ -48,7 +51,37 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h; nginx -s reload; done & exec nginx -g \"daemon off;\"'"
     # 通过 IP 地址或域名访问
     labels:
-      - "traefik.http.routers.nginx.rule=Host(`web.docker.localhost`)"
+      - "traefik.http.routers.nginx.rule=Host(`go-proverbs.docker.localhost`,`json-to-go.docker.localhost`)"
+      - "traefik.http.routers.nginx.entryPoints=http"
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./data/redis:/data
+    labels:
+      - "traefik.tcp.routers.to-redis.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.to-redis.entryPoints=redis"
+      - "traefik.tcp.routers.to-redis.service=redis-tcp"
+      - "traefik.tcp.services.redis-tcp.loadbalancer.server.port=6379"
+  mysql:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    volumes:
+      - ./config/mysql/my.cnf:/etc/my.cnf
+      - ./data/mysql:/var/lib/mysql:rw,delegated
+    environment:
+      MYSQL_ROOT_PASSWORD: "docker_mysql_root_password"
+      MYSQL_DATABASE: 'db'
+      MYSQL_USER: 'db'
+      MYSQL_PASSWORD: 'docker_mysql_db_password'
+    labels:
+      - "traefik.tcp.routers.to-mysql.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.to-mysql.entryPoints=mysql"
+      - "traefik.tcp.routers.to-mysql.service=mysql"
+      - "traefik.tcp.services.mysql.loadbalancer.server.port=3306"
   grafana:
     image: grafana/grafana:latest
     # 数据持久化需要设置容器内的grafana user id与当前用户相同，Linux系统通过命令 id -u 获取
@@ -58,3 +91,4 @@ services:
       - ./data/grafana:/var/lib/grafana
     labels:
       - "traefik.http.routers.grafana.rule=Host(`bi.docker.localhost`)"
+      - "traefik.http.routers.grafana.entryPoints=http"

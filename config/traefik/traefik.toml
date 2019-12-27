@@ -10,6 +10,10 @@
 [entryPoints]
   [entryPoints.http]
     address = ":80"
+  [entryPoints.mysql]
+    address = ":3306"
+  [entryPoints.redis]
+    address = ":6379"
 
 # 配置 providers，监听 docker 事件
 [providers.docker]
