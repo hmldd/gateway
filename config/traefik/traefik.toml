@@ -10,10 +10,19 @@
 [entryPoints]
   [entryPoints.http]
     address = ":80"
+  [entryPoints.https]
+    address = ":443"
   [entryPoints.mysql]
     address = ":3306"
   [entryPoints.redis]
     address = ":6379"
+
+[certificatesResolvers.le.acme]
+  email = "hmldd@qq.com"
+  storage = "acme.json"
+  [certificatesResolvers.le.acme.httpChallenge]
+    # 认证时使用的入口
+    entryPoint = "http"
 
 # 配置 providers，监听 docker 事件
 [providers.docker]

@@ -12,6 +12,7 @@ services:
     ports:
       # HTTP 端口
       - "80:80"
+      - "443:443"
       - "3306:3306"
       - "6379:6379"
     volumes:
@@ -51,8 +52,9 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h; nginx -s reload; done & exec nginx -g \"daemon off;\"'"
     # 通过 IP 地址或域名访问
     labels:
-      - "traefik.http.routers.nginx.rule=Host(`go-proverbs.docker.localhost`,`json-to-go.docker.localhost`)"
-      - "traefik.http.routers.nginx.entryPoints=http"
+      - "traefik.http.routers.nginx.rule=Host(`go-proverbs.docker.localhost`) || Host(`json-to-go.docker.localhost`)"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.tls.certresolver=le"
   redis:
     image: redis:latest
     restart: unless-stopped
