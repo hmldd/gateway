@@ -33,6 +33,11 @@ services:
       - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$zDPJo98m$$XC0zhnLRaYKlXNhoEbUXd/"
       # 中间件 auth 账号密码验证通过之后路由至 api@internal 服务
       - "traefik.http.routers.api.service=api@internal"
+      # http 转发至 https
+      - "traefik.http.routers.https-redirect.entrypoints=http"
+      - "traefik.http.routers.https-redirect.rule=Host(`go-proverbs.docker.localhost`) || Host(`json-to-go.docker.localhost`)"
+      - "traefik.http.routers.https-redirect.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
   whoami:
     image: containous/whoami
     # 通过 IP 地址或域名提供一个容器的服务
