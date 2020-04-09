@@ -60,6 +60,7 @@ services:
       - "traefik.http.routers.nginx.rule=Host(`go-proverbs.docker.localhost`) || Host(`json-to-go.docker.localhost`)"
       - "traefik.http.routers.nginx.tls=true"
       - "traefik.http.routers.nginx.tls.certresolver=le"
+      - "traefik.http.routers.nginx.entryPoints=https"
   redis:
     image: redis:latest
     restart: unless-stopped
